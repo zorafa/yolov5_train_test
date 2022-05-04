@@ -1,2 +1,2 @@
 # YOLOv5 Train test
-/!\ Check train-1 branch to see all updates /!\ 
+/!\ Check other branches to see all updates /!\ 
