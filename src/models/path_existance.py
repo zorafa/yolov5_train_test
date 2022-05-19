@@ -13,12 +13,13 @@ def path_existance(img_ids, data_dir, coco, df_images) :
         img_ids (array): Array with the images IDs created by the coco function. 
         data_dir (file): File with the images. Default to images2labels.
         coco (): Annotation file transformed and prepares data structures 
-        df_images (): 
+        df_images (): pd.read_csv("images_for_labelling_202201241120.csv"))
 
 
     Returns:
         my_df (data frame):  
     """
+
     old_filenames  = [] 
     dates          = []
     views          = []
@@ -35,7 +36,6 @@ def path_existance(img_ids, data_dir, coco, df_images) :
         if os.path.exists(os.path.join(data_dir, image_infos['file_name'])):
             
             # concatenate the data directory path and the files from the coco transformation ; if it exists, we compute the if loop.
-            # recall : df_images = pd.read_csv("images_for_labelling_202201241120.csv"))
 
             date_creation  = df_images.loc[df_images["filename"] == image_infos["file_name"]]["createdon"].values[0] 
             view           = df_images.loc[df_images["filename"] == image_infos["file_name"]]["view"].values[0]
