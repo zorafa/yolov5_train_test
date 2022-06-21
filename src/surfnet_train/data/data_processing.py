@@ -9,6 +9,7 @@ import os
 import cv2
 import pandas as pd
 from datetime import datetime
+from sklearn.model_selection import train_test_split
 
 
 
@@ -268,7 +269,7 @@ def path_existance(img_ids, data_dir, coco, df_images) :
 
     return(my_df)
 
-def get_train_valid (df_data, split:0.85):
+def get_train_valid (df_data, split=0.85):
 
     """_summary_
     """
