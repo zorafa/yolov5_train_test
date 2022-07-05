@@ -17,6 +17,7 @@ from matplotlib.patches import Rectangle
 from PIL import Image, ImageDraw, ImageFont, ExifTags
 
 
+
 def plot_image_and_bboxes(img, anns, ratio:float):
 
     """ Plots the image and the bounding box(es) associated to the detected object(s).
