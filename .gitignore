@@ -77,6 +77,17 @@ target/
 
 # exclude data from source control by default
 /data/
+/notebooks/csv/
+/notebooks/images/
+/notebooks/images_1/
+/notebooks/images_test_1/
+/notebooks/images2label/
+/notebooks/labels/
+/notebooks/labels_1/
+/notebooks/labels_test_1/
+/notebooks/pickle/
+/notebooks/Charles_version.ipynb
+/notebooks/tests_bboxes.ipynb
 
 # Mac OS-specific storage files
 .DS_Store
