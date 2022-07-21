@@ -17,17 +17,6 @@ from matplotlib.patches import Rectangle
 from PIL import Image, ImageDraw, ImageFont, ExifTags
 
 
-class_id_to_name_mapping = {1: 'Insulating material',
- 4: 'Drum',
- 2: 'Bottle-shaped',
- 3: 'Can-shaped',
- 5: 'Other packaging',
- 6: 'Tire',
- 7: 'Fishing net / cord',
- 8: 'Easily namable',
- 9: 'Unclear',
- 0: 'Sheet / tarp / plastic bag / fragment'}
-
 
 def plot_image_and_bboxes(img, anns, ratio:float):
 
