@@ -29,55 +29,29 @@ class_id_to_name_mapping = {1: 'Insulating material',
  0: 'Sheet / tarp / plastic bag / fragment'}
 
 
-# def plot_image_and_bboxes(img, anns, ratio:float):
+def plot_image_and_bboxes(img, anns, ratio:float):
 
-#     """ Plots the image and the bounding box(es) associated to the detected object(s).
+    """ Plots the image and the bounding box(es) associated to the detected object(s).
 
-#     Args:
-#         img (): Image, from the instance file.
-#         anns (): Annotations linked to the specified image, from instance file.
-#         ratio (float): Ratio - most often defined at the (1080/height of the image).
-#     """
-#     fig, ax = plt.subplots(1, figsize=(12, 10))
-#     ax.imshow(img)
+    Args:
+        img (): Image, from the instance file.
+        anns (): Annotations linked to the specified image, from instance file.
+        ratio (float): Ratio - most often defined at the (1080/height of the image).
+    """
+    fig, ax = plt.subplots(1, figsize=(12, 10))
+    ax.imshow(img)
 
-#     for ann in anns:
-#         [bbox_x, bbox_y, bbox_w, bbox_h] = (ratio*np.array(ann['bbox'])).astype(int)
-#         # Obtains the new coordinates of the bboxes - normalized via the ratio.
-#         rect = patches.Rectangle((bbox_x, bbox_y), bbox_w, bbox_h, linewidth=2, edgecolor='r', facecolor="none")
-#         ax.add_patch(rect)
+    for ann in anns:
+        [bbox_x, bbox_y, bbox_w, bbox_h] = (ratio*np.array(ann['bbox'])).astype(int)
+        # Obtains the new coordinates of the bboxes - normalized via the ratio.
+        rect = patches.Rectangle((bbox_x, bbox_y), bbox_w, bbox_h, linewidth=2, edgecolor='r', facecolor="none")
+        ax.add_patch(rect)
 
-#     plt.show()
-#     # Prints out a 12 * 10 image with bounding box(es).
-
-
-def plot_image_and_bboxes(image, annotation_list):
-    annotations = np.array(annotation_list)
-    w, h = image.size
- 
-    plotted_image = ImageDraw.Draw(image)
-
-    transformed_annotations = np.copy(annotations)
-    transformed_annotations[:,[1,3]] = annotations[:,[1,3]] * w
-    transformed_annotations[:,[2,4]] = annotations[:,[2,4]] * h 
-    
-    transformed_annotations[:,1] = transformed_annotations[:,1] - (transformed_annotations[:,3] / 2)
-    transformed_annotations[:,2] = transformed_annotations[:,2] - (transformed_annotations[:,4] / 2)
-    transformed_annotations[:,3] = transformed_annotations[:,1] + transformed_annotations[:,3]
-    transformed_annotations[:,4] = transformed_annotations[:,2] + transformed_annotations[:,4]
-    
-    for ann in transformed_annotations:
-        obj_cls, x0, y0, x1, y1 = ann
-        plotted_image.rectangle(((x0,y0), (x1,y1)), outline="#ff8300", width=5)
-        
-        plotted_image.text((x0, y0 - 10), class_id_to_name_mapping[(int(obj_cls))])
-    
-    plt.figure(figsize = (12,10))
-    plt.imshow(np.array(image))
     plt.show()
+    # Prints out a 12 * 10 image with bounding box(es).
 
 
-def image_orientation (image:image):
+def image_orientation (image):
     """ Function which gives the images that have a specified orientation the same orientation.
         If the image does not have an orientation, the image is not altered.
 
