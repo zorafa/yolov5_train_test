@@ -86,8 +86,7 @@ target/
 /notebooks/labels_1/
 /notebooks/labels_test_1/
 /notebooks/pickle/
-/notebooks/Charles_version.ipynb
-/notebooks/tests_bboxes.ipynb
+
 
 # Mac OS-specific storage files
 .DS_Store
