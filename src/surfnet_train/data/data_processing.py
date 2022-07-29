@@ -197,7 +197,7 @@ def build_yolo_annotations_for_images(data_dir, images_dir, path_bboxes, df_bbox
                 print("Exists : ", count_exists)
                 print("Missing : ",count_missing)
 
-    print(f"Process finished succesfully with {count_missing} missing images !")
+    print(f"Process finished successfully with {count_missing} missing images !")
 
     return valid_imagenames, count_exists, count_missing
 

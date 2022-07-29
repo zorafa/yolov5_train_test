@@ -1,6 +1,12 @@
 names:
-["Sheet / tarp / plastic bag / fragment", "Insulating material", "Bottle-shaped", "Can-shaped", "Drum", "Other packaging", "Tire", "Fishing net / cord", "Easily namable", "Unclear"]
-nc: 10
+- Sheet / tarp / plastic bag / fragment
+- Insulating material
+- Bottle-Can-Drum-shaped
+- Other packaging / Easily namable / Unclear
+- Tire
+- Fishing net / cord
+
+nc: 6
 path: ./../
 train: ./train.txt
 val: ./val.txt
