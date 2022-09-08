@@ -131,7 +131,7 @@ def build_yolo_annotations_for_images(data_dir, images_dir, df_bboxes, df_images
     if quality_filters:
         df_images = df_images[df_images["image_quality"].isin(quality_filters)]
 
-    used_imgs = set(df_images.index)
+    used_imgs = used_imgs & set(df_images.index) 
     print(f"number of images after applying context and quality filters: {len(used_imgs)}")
 
     if exclude_ids:
