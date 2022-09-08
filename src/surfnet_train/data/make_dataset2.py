@@ -1,5 +1,5 @@
 from data_processing import get_annotations_from_files, get_annotations_from_db, find_img_ids_to_exclude
-from data_processing import generate_yolo_files, get_train_valid, build_yolo_annotations_for_images
+from data_processing import generate_yolo_files, get_train_valid, build_yolo_annotations_for_images, build_yolo_annotations_for_images_VM
 from pathlib import Path
 from sklearn.model_selection import KFold
 import pandas as pd
@@ -23,8 +23,14 @@ def main(args):
         to_exclude = find_img_ids_to_exclude(args.exclude_img_folder)
     else:
         to_exclude = None
+
+    # new
     yolo_filelist, cpos, cneg = build_yolo_annotations_for_images(data_dir, args.images_dir,df_bboxes, df_images,
              args.limit_data, args.context_filters, args.quality_filters, to_exclude)
+
+    # old
+    # yolo_filelist, cpos, cneg = build_yolo_annotations_for_images_VM(data_dir, args.images_dir, args.bbox_filename, 
+    #         df_bboxes, df_images, args.limit_data, to_exclude)
 
     print(f"found {cpos} valid annotations with images and {cneg} unmatched annotations")
 

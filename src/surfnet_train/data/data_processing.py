@@ -199,8 +199,7 @@ def build_yolo_annotations_for_images(data_dir, images_dir, df_bboxes, df_images
 
 
 def build_yolo_annotations_for_images_VM(data_dir, images_dir, path_bboxes, df_bboxes,
-                                      df_images, limit_data, img_folder_name, label_folder_name, 
-                                      exclude_ids=None):
+                                      df_images, limit_data, exclude_ids=None):
     """ Generates the .txt files that are necessary for yolo training. See
     https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data for data format
 
@@ -227,10 +226,10 @@ def build_yolo_annotations_for_images_VM(data_dir, images_dir, path_bboxes, df_b
         used_imgs = used_imgs - exclude_ids
         print(f"after exclusion, number of images with a bbox in database: {len(used_imgs)}")
 
-    if not Path.exists(data_dir / img_folder_name):
-        os.mkdir(data_dir / img_folder_name)
-    if not Path.exists(data_dir / label_folder_name):
-        os.mkdir(data_dir / label_folder_name)
+    if not Path.exists(data_dir / "images"):
+        os.mkdir(data_dir / "images")
+    if not Path.exists(data_dir / "labels"):
+        os.mkdir(data_dir / "labels")
 
     # to determine which methods or annotation processing we will use 
     # (it depends if we work with the whole dataset or not)
@@ -283,8 +282,8 @@ def build_yolo_annotations_for_images_VM(data_dir, images_dir, path_bboxes, df_b
                 yolo_strs = [str(cat) + " " + " ".join(bbox.astype(str)) for (cat, bbox) in zip(labels, bboxes)]
 
             # writing the image and annotation
-            img_file_name   = data_dir / img_folder_name / (img_id + ".jpg")
-            label_file_name = data_dir / label_folder_name / (img_id + ".txt")
+            img_file_name   = data_dir / "images" / (img_id + ".jpg")
+            label_file_name = data_dir / "labels" / (img_id + ".txt")
             Image.fromarray(image).save(img_file_name)
             with open(label_file_name, 'w') as f:
                 f.write('\n'.join(yolo_strs))
