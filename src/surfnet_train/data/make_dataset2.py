@@ -23,11 +23,11 @@ def main(args):
         to_exclude = find_img_ids_to_exclude(args.exclude_img_folder)
     else:
         to_exclude = None
-    yolo_filelist, cpos, cneg = build_yolo_annotations_for_images(data_dir, args.images_dir, args.bbox_filename,
-            df_bboxes, df_images, args.limit_data, args.context_filters, args.quality_filters, to_exclude)
+    yolo_filelist, cpos, cneg = build_yolo_annotations_for_images(data_dir, args.images_dir,df_bboxes, df_images,
+             args.limit_data, args.context_filters, args.quality_filters, to_exclude)
 
     print(f"found {cpos} valid annotations with images and {cneg} unmatched annotations")
-    
+
     train_files, val_files = get_train_valid(yolo_filelist, args.split)
 
     generate_yolo_files(data_dir, train_files, val_files)
@@ -39,6 +39,7 @@ if __name__ == '__main__':
     parser.add_argument('--images-dir', type=str, help="path to image folder")
     parser.add_argument('--password', type=str, help="password for connection to DB")
     parser.add_argument('--bbox-filename', type=str, default="")
+    parser.add_argument('--images-filename', type=str, default="")
     parser.add_argument('--context-filters', type=list, help="context filters to apply", default=None)
     parser.add_argument('--quality-filters', type=list, help="quality filters to apply", default=None)
     parser.add_argument('--split', type=float, default=0.85)
