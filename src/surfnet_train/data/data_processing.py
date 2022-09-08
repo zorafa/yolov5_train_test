@@ -98,7 +98,105 @@ def process_annotations(anns, ratio, target_h, target_w):
     return labels, bboxes
 
 
-def build_yolo_annotations_for_images(data_dir, images_dir, path_bboxes, df_bboxes,
+def build_yolo_annotations_for_images(data_dir, images_dir, df_bboxes, df_images, limit_data, context_filters = None, quality_filters = None, exclude_ids=None):
+
+    """ Generates the .txt files that are necessary for yolo training. See
+    https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data for data format
+
+    Args:
+        data_dir: path of the root data dir. It should contain an
+        images folder with all images.
+        raw_annotations, raw_images_info, raw_category_info: extracts from
+        the database
+
+    Returns:
+        the list of images path that will be used in training
+    """
+
+    valid_imagenames = []
+
+    input_img_folder = Path(images_dir)
+    data_dir = Path(data_dir)
+    list_imgs = sorted(os.listdir(input_img_folder))
+    used_imgs = set(df_bboxes["id_ref_images_for_labelling"].values)
+
+    print(f"number of images in images folder: {len(list_imgs)}")
+    print(f"number of images referenced in database: {len(df_images)}")
+    print(f"number of images with a bbox in database: {len(used_imgs)}")
+
+    # apply filters if given :
+    if context_filters:
+        df_images = df_images[df_images["context"].isin(context_filters)]
+    
+    if quality_filters:
+        df_images = df_images[df_images["image_quality"].isin(quality_filters)]
+
+    used_imgs = set(df_images.index)
+    print(f"number of images after applying context and quality filters: {len(used_imgs)}")
+
+    if exclude_ids:
+        used_imgs = used_imgs - exclude_ids
+        print(f"after exclusion, number of images with a bbox in database: {len(used_imgs)}")
+
+    if not Path.exists(data_dir / "images"):
+        os.mkdir(data_dir / "images")
+    if not Path.exists(data_dir / "labels"):
+        os.mkdir(data_dir / "labels")
+
+    count_exists, count_missing = 0, 0
+
+    print("Start building the annotations ...")
+
+    for img_id in used_imgs:
+
+        img_name = df_images.loc[img_id]["filename"]
+        if Path.exists(input_img_folder / img_name):
+            count_exists += 1
+            if limit_data > 0 and count_exists > limit_data:
+                break
+
+            image = Image.open(input_img_folder / img_name)
+
+            # in place rotation of the image using Exif data
+            try :
+                image = image_orientation(image)
+            except :
+                pass
+
+            image    = np.array(image)
+            h, w     = image.shape[:-1]
+            target_h = 1080 # the target height of the image
+            ratio    = target_h / h # We get the ratio of the target and the actual height
+            target_w = int(ratio*w)
+            image    = cv2.resize(image, (target_w, target_h))
+            h, w     = image.shape[:-1]
+
+            # getting annotations and converting to yolo
+            anns = df_bboxes[df_bboxes["id_ref_images_for_labelling"] == img_id]
+            labels, bboxes = process_annotations(anns, ratio, target_h, target_w)
+            yolo_strs = [str(cat) + " " + " ".join(bbox.astype(str)) for (cat, bbox) in zip(labels, bboxes)]
+
+            # writing the image and annotation
+            img_file_name   = data_dir / "images" / (img_id + ".jpg")
+            label_file_name = data_dir / "labels" / (img_id + ".txt")
+            Image.fromarray(image).save(img_file_name)
+            with open(label_file_name, 'w') as f:
+                f.write('\n'.join(yolo_strs))
+
+            valid_imagenames.append(img_file_name.as_posix())
+        else:
+            count_missing +=1
+
+        if count_exists%500==0:
+                print("Exists : ", count_exists)
+                print("Missing : ",count_missing)
+
+    print(f"Process finished successfully with {count_missing} missing images !")
+
+    return valid_imagenames, count_exists, count_missing
+
+
+def build_yolo_annotations_for_images_VM(data_dir, images_dir, path_bboxes, df_bboxes,
                                       df_images, limit_data, img_folder_name, label_folder_name, 
                                       exclude_ids=None):
     """ Generates the .txt files that are necessary for yolo training. See
