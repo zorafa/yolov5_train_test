@@ -126,11 +126,11 @@ def build_yolo_annotations_for_images(data_dir, images_dir, df_bboxes, df_images
 
     # apply filters if given :
     if context_filters:
-        context_filters = context_filters.split("_")
+        context_filters = context_filters[1:-1].split(",")
         df_images = df_images[df_images["context"].isin(context_filters)]
     
     if quality_filters:
-        quality_filters = quality_filters.split("_")
+        quality_filters = quality_filters[1:-1].split(",")
         df_images = df_images[df_images["image_quality"].isin(quality_filters)]
 
     used_imgs = used_imgs & set(df_images.index) 
