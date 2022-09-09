@@ -25,12 +25,12 @@ def main(args):
         to_exclude = None
 
     # new
-    yolo_filelist, cpos, cneg = build_yolo_annotations_for_images(data_dir, args.images_dir,df_bboxes, df_images,
-             args.limit_data, args.context_filters, args.quality_filters, to_exclude)
+    # yolo_filelist, cpos, cneg = build_yolo_annotations_for_images(data_dir, args.images_dir,df_bboxes, df_images,
+    #          args.limit_data, args.context_filters, args.quality_filters, to_exclude)
 
     # old
-    # yolo_filelist, cpos, cneg = build_yolo_annotations_for_images_VM(data_dir, args.images_dir, args.bbox_filename, 
-    #         df_bboxes, df_images, args.limit_data, to_exclude)
+    yolo_filelist, cpos, cneg = build_yolo_annotations_for_images_VM(data_dir, args.images_dir, args.bbox_filename, 
+            df_bboxes, df_images, args.limit_data, to_exclude)
 
     print(f"found {cpos} valid annotations with images and {cneg} unmatched annotations")
 
