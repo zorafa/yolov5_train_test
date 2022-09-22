@@ -1,11 +1,16 @@
+from array import array
 import os
-from pathlib import Path
+from pathlib import Path, WindowsPath
 import yaml
 import time
 import psycopg2
 from datetime import datetime
+from tqdm import tqdm
+from typing import Union, List, Tuple
+from pandas import DataFrame
 
 import numpy as np
+from numpy import dtype, int64
 from sklearn.model_selection import train_test_split
 import pandas as pd
 import cv2
@@ -394,3 +399,169 @@ def save_annotations_to_files(output_dir, df_bboxes, df_images):
 def find_img_ids_to_exclude(data_dir):
     list_files = sorted(os.listdir(Path(data_dir) / "labels"))
     return set([f.split(".")[0] for f in list_files])
+
+
+"""------- FONCTIONS FOR UPDATING THE DATABASE ---------"""
+
+def convert_bboxes_to_initial_locations_from_txt_labels(labels_folder_path:Union[str,WindowsPath], img_id:str, ratio:float, target_h:int, target_w:int) -> Tuple[array[dtype[int64]],array[dtype[int64]]]:
+
+    """ Convert bounding boxes to initial annotation data (location_x, location_y, Width, Height) from .txt label files.
+
+    Args:
+        labels_folder_path (Union[str,WindowsPath]): the name of the labels folder or the path od this folder
+        img_id (str): the id of the current image
+        target_h (int): the target height of the image
+        ratio (float): the ratio of the target and the actual height
+        target_w (int): the target width of the image
+    
+    Returns:
+        labels (array[dtype[int64]): the array of the labels presents on the image
+        bboxes (array[dtype[int64]): the coordinates of the different bounding boxes of the current image
+    """
+
+    labels_folder_path = Path(labels_folder_path)
+
+    with open(labels_folder_path / f"{img_id}.txt", "r") as file:
+        lines = file.readlines()
+
+    labels, bboxes = [], []
+
+    for bbox in lines:
+        bbox = bbox.split(" ")
+        labels.append(bbox[0])
+        bboxes.append(bbox[1:])
+
+    labels = np.array(labels).astype(int) + 1
+    bboxes = np.array(bboxes).astype(float)
+
+    # on décentre la bbox
+    bboxes[:,[0,1]] = bboxes[:,[0,1]] - bboxes[:,[2,3]]/2
+
+    # on dénormalize
+    bboxes[:,[0,2]] = bboxes[:,[0,2]] * target_w
+    bboxes[:,[1,3]] = bboxes[:,[1,3]] * target_h
+
+    # dimensions d'origine
+    bboxes = bboxes / ratio
+
+    return labels, bboxes.astype(int)
+
+
+
+def build_bboxes_csv_file_for_DB(data_dir:Union[WindowsPath,str], images_dir:Union[WindowsPath,str], labels_folder_name:Union[str,WindowsPath],
+                                 df_bboxes:DataFrame, df_images:DataFrame) -> Tuple[DataFrame,List]:
+
+    """ Generates the .csv file for updating the DataBase.
+
+    Args:
+        data_dir (WindowsPath): path of the root data directory. It should contain a folder with all useful data for images and annotations.
+        images_dir (WindowsPath): path of the image directory. It should contain a folder with all images.
+        labels_folder_name (Union[str,WindowsPath]): the name of the labels folder or the path od this folder.
+        df_bboxes (DataFrame): DataFrame with the bounding boxes informations (location X, Y and Height, Width)
+        df_images (DataFrame): DataFrame with the image informations
+    
+    Returns:
+        new_df_bboxes (DataFrame): new bounding boxes csv file for initial DataBase including (location X, Y and Height, Width) informations.
+        exceptions (List): list of image ids with annotation errors.
+    """
+
+    input_img_folder = Path(images_dir)
+    data_dir = Path(data_dir)
+    list_imgs = sorted(os.listdir(input_img_folder))
+    used_imgs = set(df_bboxes["id_ref_images_for_labelling"].values)
+    labels_folder_path = Path(labels_folder_name)
+
+    
+    modified_imgs = set(os.listdir(labels_folder_path))
+    modified_ids = set([img_txt.split(".")[0] for img_txt in modified_imgs])
+
+    # set of context types :
+    # set_contexts = set(df_images['context'])
+    #filter_context = set_contexts - {'river', 'nature'}
+
+    none_modified_imgs = used_imgs - modified_ids
+    #none_modified_imgs = set(df_images[df_images["context"].isin(filter_context)].index)
+
+    print(f"number of images in images folder: {len(list_imgs)}")
+    print(f"number of images referenced in database: {len(df_images)}")
+    print(f"number of images used in database: {len(used_imgs)}")
+    print(f"number of images to update in database: {len(modified_ids)}")
+    print(f"number of images to keep without updates in database: {len(none_modified_imgs)}")
+
+    count_exists = 0
+    exceptions = []
+
+    new_df_bboxes = df_bboxes[df_bboxes["id_ref_images_for_labelling"].isin(none_modified_imgs)]
+
+    index = 2*len(new_df_bboxes)
+
+    print("Start updating the annotations ...")
+
+    for img_id in tqdm(modified_ids):
+
+        try :
+            img_name = df_images.loc[img_id]["filename"]
+
+            infos_df_bboxes = df_bboxes[df_bboxes["id_ref_images_for_labelling"] == img_id]
+            nb_trashs = len(infos_df_bboxes)
+
+            image = Image.open(input_img_folder / img_name)
+
+            # in place rotation of the image using Exif data
+            try :
+                image = image_orientation(image)
+            except :
+                pass
+
+            image    = np.array(image)
+            h, w     = image.shape[:-1]
+            target_h = 1080 # the target height of the image
+            ratio    = target_h / h # We get the ratio of the target and the actual height
+            target_w = int(ratio*w)
+            image    = cv2.resize(image, (target_w, target_h))
+            h, w     = image.shape[:-1]
+
+            labels, bboxes = convert_bboxes_to_initial_locations_from_txt_labels(labels_folder_path, img_id, target_h, ratio, target_w)
+
+            row_diff = nb_trashs - len(labels)
+
+            if row_diff < 0:
+
+                for i in range(nb_trashs):
+                    index = index+1
+                    new_df_bboxes.loc[index] = [infos_df_bboxes.iloc[i]["id"], infos_df_bboxes.iloc[i]["id_creator_fk"], infos_df_bboxes.iloc[i]["createdon"], labels[i], img_id, bboxes[i,0], bboxes[i,1],bboxes[i,2], bboxes[i,3]]
+
+                index += 20
+                # add new rows for new trashs:
+                for i in range(nb_trashs, nb_trashs + row_diff):
+                    index = index+1
+                    new_df_bboxes.loc[index] = [None, None, datetime.now(), labels[i], img_id, bboxes[i,0], bboxes[i,1],bboxes[i,2], bboxes[i,3]]
+
+                index += 20 
+
+
+            elif row_diff > 0:
+
+                for i in range(len(labels)):
+                    index = index+1
+                    new_df_bboxes.loc[index] = [infos_df_bboxes.iloc[i]["id"], infos_df_bboxes.iloc[i]["id_creator_fk"], infos_df_bboxes.iloc[i]["createdon"], labels[i], img_id, bboxes[i,0], bboxes[i,1],bboxes[i,2], bboxes[i,3]]
+                index += 20          
+            else:
+
+                for i in range(nb_trashs):
+                    index = index+1
+                    new_df_bboxes.loc[index] = [infos_df_bboxes.iloc[i]["id"], infos_df_bboxes.iloc[i]["id_creator_fk"], infos_df_bboxes.iloc[i]["createdon"], labels[i], img_id, bboxes[i,0], bboxes[i,1],bboxes[i,2], bboxes[i,3]]
+                index += 20
+                
+            count_exists+=1
+
+        except:
+            exceptions.append(img_id)
+
+        if count_exists % 500 == 0:
+            print(count_exists)
+            print(len(new_df_bboxes))
+
+    print(f"Process finished successfully with {count_exists} updated images !")
+
+    return new_df_bboxes, exceptions
